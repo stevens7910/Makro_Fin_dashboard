@@ -104,8 +104,8 @@ export async function getMacroDataset(forceRefresh = false): Promise<MacroDatase
         }
       }
 
-      // Stáhnout z /data/macro-data.json (obsluhováno rovněž Service Workerem v offline režimu)
-      const response = await fetch('/data/macro-data.json', {
+      // Stáhnout z ./data/macro-data.json (obsluhováno rovněž Service Workerem v offline režimu)
+      const response = await fetch('./data/macro-data.json', {
         cache: forceRefresh ? 'reload' : 'default'
       });
       if (!response.ok) {

@@ -3,11 +3,11 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './styles/dashboard.css';
 
-// Registrace Service Workeru pro plný offline režim PWA
+// Registrace Service Workeru pro plný offline režim PWA (relativní cesta pro podporu GitHub Pages i root domény)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
-      .register('/sw.js', { scope: '/' })
+      .register('./sw.js', { scope: './' })
       .then((registration) => {
         console.info('[PWA] Service Worker úspěšně registrován:', registration.scope);
       })
