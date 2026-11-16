@@ -1,0 +1,63 @@
+{
+  "name": "CZ MakroFin — Makroekonomický Dashboard ČR",
+  "short_name": "CZ MakroFin",
+  "description": "Analytický PWA dashboard pro sledování makroekonomických a úrokových indikátorů České republiky (ČNB 2W Repo, PRIBOR, IRS swapy, CPI inflace, HDP, nezaměstnanost, kurzy CZK/EUR a CZK/USD) s plnou offline podporou.",
+  "lang": "cs-CZ",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1120",
+  "theme_color": "#0f172a",
+  "categories": ["finance", "business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aktuální přehled KPI",
+      "short_name": "Přehled",
+      "description": "Rychlý přehled klíčových indikátorů ČR",
+      "url": "/?tab=overview",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Úrokové sazby & IRS",
+      "short_name": "Sazby",
+      "description": "2W Repo ČNB, PRIBOR 1M/3M/12M a IRS 3Y/5Y",
+      "url": "/?tab=rates",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inflace, HDP & Nezaměstnanost",
+      "short_name": "Makro ČR",
+      "description": "CPI inflace, růst HDP a trh práce",
+      "url": "/?tab=macro",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Měnové kurzy CZK",
+      "short_name": "Kurzy FX",
+      "description": "Vývoj kurzů CZK/EUR a CZK/USD",
+      "url": "/?tab=fx",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
