@@ -1,0 +1,36 @@
+name: Update data & deploy PWA
+
+on:
+  schedule:
+    - cron: '30 6 * * *'   # denně 06:30 UTC (ČNB publikuje fixingy ráno)
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Stáhnout data z ČNB / ČSÚ / Eurostatu
+        run: npm run update-data
+      - name: Audit dat proti oficiálním zdrojům
+        run: npm run audit-data
+      - run: npm run build
+      - name: SPA fallback
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+          clean: true

@@ -14,7 +14,7 @@ import {
   getCacheDiagnostics,
   getMacroDataset,
   subscribeDiagnostics,
-  syncWithLivePublicApis
+  refreshData
 } from './services/dataService';
 import { ActiveTab, IndicatorId, MacroDatasetPayload } from './types/macro';
 
@@ -160,7 +160,7 @@ export const App: React.FC = () => {
     setIsSyncing(true);
     setSyncMessage(null);
     try {
-      const result = await syncWithLivePublicApis();
+      const result = await refreshData();
       const updated = await getMacroDataset(false);
       setDataset({ ...updated });
       setSyncMessage(result.message);
@@ -195,7 +195,7 @@ export const App: React.FC = () => {
   }, [deferredPrompt]);
 
   const kpiSummaries = useMemo(
-    () => (dataset ? computeKpiSummaries(dataset.series) : []),
+    () => (dataset ? computeKpiSummaries(dataset.series, dataset.latest) : []),
     [dataset]
   );
 
@@ -300,11 +300,11 @@ export const App: React.FC = () => {
             <strong>CZ MakroFin Terminal PWA</strong>
             <span>•</span>
             <span>
-              Rozsah dat: Leden 2015 – {latestPoint ? formatValidDateCz(latestPoint.validDate) : 'Listopad 2026'} ({dataset?.series.length ?? 0} měsíčních záznamů)
+              Rozsah dat: Leden 2015 – {dataset?.lastUpdated ? new Date(dataset.lastUpdated).toLocaleDateString('cs-CZ') : ''} ({dataset?.series.length ?? 0} měsíčních záznamů)
             </span>
           </div>
           <div className="footer-right">
-            <span>Zdroje: ČNB ARAD, ČSÚ Otevřená data (JSON-stat), CFBF PRIBOR &amp; CZK IRS</span>
+            <span>Zdroje: ČNB, ČSÚ DataStat, Eurostat</span>
             <span>•</span>
             <span>L1 Cache hits: {diagnostics.memoryHits}</span>
           </div>

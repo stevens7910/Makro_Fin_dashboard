@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="brand-subtitle">
-              Analytický monitoring ČNB ARAD, ČSÚ DataStat, PRIBOR, IRS &amp; devizových kurzů (2015–2026)
+              Oficiální data ČNB, ČSÚ a Eurostatu: sazby, PRIBOR, inflace, HDP, nezaměstnanost a kurzy (2015–dnes)
             </p>
           </div>
         </div>
@@ -121,10 +121,10 @@ export const Header: React.FC<HeaderProps> = ({
             className="action-btn"
             onClick={onManualSync}
             disabled={isSyncing}
-            title="Synchronizovat s veřejnými API ČNB / ČSÚ"
+            title="Znovu načíst nejnovější data ze serveru"
           >
             <RefreshCw size={15} className={isSyncing ? 'spin-anim' : ''} />
-            <span className="hide-mobile">{isSyncing ? 'Synchronizuji...' : 'Aktualizovat API'}</span>
+            <span className="hide-mobile">{isSyncing ? 'Synchronizuji...' : 'Aktualizovat data'}</span>
           </button>
 
           {/* Tlačítko instalace PWA */}

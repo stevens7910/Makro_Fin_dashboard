@@ -1,4 +1,4 @@
-import {
+﻿import {
   CacheDiagnostics,
   IndicatorId,
   KpiSummary,
@@ -8,8 +8,8 @@ import {
 } from '../types/macro';
 import { INDICATORS, INDICATOR_LIST, TIME_RANGE_OPTIONS } from '../config/indicators';
 
-const STORAGE_CACHE_KEY = 'cz_makrofin_dataset_cache_v1';
-const STORAGE_META_KEY = 'cz_makrofin_dataset_meta_v1';
+const STORAGE_CACHE_KEY = 'cz_makrofin_dataset_cache_v2';
+const STORAGE_META_KEY = 'cz_makrofin_dataset_meta_v2';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6; // 6 hodin TTL pro L2 persistentní cache
 
 // L1 In-Memory Singleton Cache — zamezuje znovustahování dat při překlikávání záložek
@@ -150,76 +150,35 @@ export async function getMacroDataset(forceRefresh = false): Promise<MacroDatase
 }
 
 /**
- * Volitelná živá synchronizace s veřejnými API ČNB (kurzy CZK/EUR, CZK/USD) a ČSÚ (JSON-stat).
- * Pokud prohlížeč narazí na CORS nebo je uživatel offline, plynule ponechá lokální JSON dataset.
+ * Znovu načte dataset ze serveru (obchází L1/L2 i HTTP cache a čistí SW datovou cache).
+ * Poznámka: Prohlížeč nemůže volat api.cnb.cz napřímo (API neposílá CORS hlavičky),
+ * proto se čerstvá data z ČNB / ČSÚ / Eurostatu stahují skriptem `npm run update-data`
+ * (v repozitáři běží automaticky každý den přes GitHub Actions) a aplikace je jen načte.
  */
-export async function syncWithLivePublicApis(): Promise<{
+export async function refreshData(): Promise<{
   success: boolean;
+  changed: boolean;
   message: string;
-  updatedFields: string[];
 }> {
-  const dataset = await getMacroDataset(false);
-  const updatedFields: string[] = [];
-
+  const before = memoryDataset?.lastUpdated ?? '';
   try {
-    // Pokus o přímé načtení denního kurzovního lístku ČNB
-    const cnbUrl =
-      'https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt';
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4500);
-
-    const resp = await fetch(cnbUrl, { signal: controller.signal });
-    clearTimeout(timer);
-
-    if (resp.ok) {
-      const txt = await resp.text();
-      const lines = txt.split('\n').map((l) => l.trim()).filter(Boolean);
-      const latest = { ...dataset.series[dataset.series.length - 1] };
-
-      for (const line of lines.slice(2)) {
-        const parts = line.split('|');
-        if (parts.length >= 5) {
-          const code = parts[3].trim();
-          const amount = parseFloat(parts[2].replace(',', '.')) || 1;
-          const rate = parseFloat(parts[4].replace(',', '.')) / amount;
-          if (code === 'EUR' && !isNaN(rate)) {
-            latest.fx_eur = Number(rate.toFixed(2));
-            updatedFields.push(`CZK/EUR (${latest.fx_eur} Kč)`);
-          }
-          if (code === 'USD' && !isNaN(rate)) {
-            latest.fx_usd = Number(rate.toFixed(2));
-            updatedFields.push(`CZK/USD (${latest.fx_usd} Kč)`);
-          }
-        }
-      }
-
-      if (updatedFields.length > 0) {
-        dataset.series[dataset.series.length - 1] = latest;
-        memoryDataset = { ...dataset, lastUpdated: new Date().toISOString() };
-        sliceMemoCache.clear();
-        kpiSummaryMemo = null;
-        diagnosticsState.liveCnbStatus = 'ok';
-        diagnosticsState.dataSourceUsed = 'live-api-enriched';
-        notifyListeners();
-        return {
-          success: true,
-          message: `Živá data z ČNB API úspěšně načtena: ${updatedFields.join(', ')}`,
-          updatedFields
-        };
-      }
-    }
-  } catch {
-    // V prostředí prohlížeče bez CORS proxy nebo v offline režimu použijeme lokální JSON ze scraperu
+    const fresh = await clearAllCachesAndReload();
+    const changed = !!before && fresh.lastUpdated !== before;
+    const stamp = new Date(fresh.lastUpdated).toLocaleString('cs-CZ');
+    return {
+      success: true,
+      changed,
+      message: changed
+        ? `Nalezena novější data (stav k ${stamp}).`
+        : `Data jsou aktuální – poslední aktualizace zdrojů ${stamp}. Server doplňuje nová data automaticky každý den.`
+    };
+  } catch (err) {
+    return {
+      success: false,
+      changed: false,
+      message: `Aktualizace selhala (${err instanceof Error ? err.message : 'neznámá chyba'}). Zobrazena jsou data z lokální cache.`
+    };
   }
-
-  diagnosticsState.liveCnbStatus = 'fallback';
-  notifyListeners();
-  return {
-    success: false,
-    message:
-      'Přímé volání ČNB API z prohlížeče bylo omezeno politikou CORS nebo jste offline. Použita kompletní lokální databáze macro-data.json (připravená pro scripts/scraper_cz_macro.py).',
-    updatedFields: []
-  };
 }
 
 /**
@@ -275,74 +234,124 @@ export function filterSeriesByRange(
   return result;
 }
 
-/**
- * Vypočítá přehledové KPI karty pro hlavní stránku (Aktuální situace) včetně MoM/QoQ a YoY změn.
- */
-export function computeKpiSummaries(series: MacroDataPoint[]): KpiSummary[] {
-  if (!series || series.length === 0) return [];
-  if (kpiSummaryMemo) {
-    return kpiSummaryMemo;
-  }
+export function latestIndex(series: MacroDataPoint[], id: IndicatorId): number {
+  for (let i = series.length - 1; i >= 0; i--) if (series[i][id] !== null) return i;
+  return -1;
+}
 
-  const latestIdx = series.length - 1;
-  const latest = series[latestIdx];
-  const prevMonth = series[Math.max(0, latestIdx - 1)];
-  const prevQuarter = series[Math.max(0, latestIdx - 3)];
-  const prevYear = series[Math.max(0, latestIdx - 12)];
-  const last12 = series.slice(Math.max(0, series.length - 12));
+export function latestValue(series: MacroDataPoint[], id: IndicatorId): number | null {
+  const i = latestIndex(series, id);
+  return i < 0 ? null : (series[i][id] as number);
+}
+
+export interface SeriesStats {
+  current: number;
+  first: number;
+  min: number;
+  max: number;
+  avg: number;
+  delta: number;
+  pctDelta: number;
+  count: number;
+}
+
+/** Statistiky přes nenulové hodnoty (chybějící / nepublikované měsíce se ignorují). */
+export function seriesStats(series: MacroDataPoint[], id: IndicatorId): SeriesStats | null {
+  const vals = series.map((p) => p[id]).filter((v): v is number => v !== null);
+  if (vals.length === 0) return null;
+  const first = vals[0];
+  const current = vals[vals.length - 1];
+  return {
+    current,
+    first,
+    min: Math.min(...vals),
+    max: Math.max(...vals),
+    avg: vals.reduce((a, b) => a + b, 0) / vals.length,
+    delta: current - first,
+    pctDelta: first !== 0 ? ((current - first) / first) * 100 : 0,
+    count: vals.length
+  };
+}
+
+/**
+ * Vypočítá přehledové KPI karty. Každý indikátor má vlastní "poslední známé pozorování"
+ * (CPI a nezaměstnanost vycházejí se zpožděním, HDP čtvrtletně, IRS nemá veřejný zdroj).
+ */
+export function computeKpiSummaries(
+  series: MacroDataPoint[],
+  latestMeta?: MacroDatasetPayload['latest']
+): KpiSummary[] {
+  if (!series || series.length === 0) return [];
+  if (kpiSummaryMemo) return kpiSummaryMemo;
 
   const summaries: KpiSummary[] = INDICATOR_LIST.map((def) => {
-    const currentVal = latest[def.id];
-    const isQuarterly = def.frequency === 'Čtvrtletní';
-    const refPrev = isQuarterly ? prevQuarter[def.id] : prevMonth[def.id];
-    const refYear = prevYear[def.id];
-
-    let momChange: number;
-    let yoyChange: number;
-
-    if (def.changeUnit === 'pct') {
-      momChange = refPrev !== 0 ? ((currentVal - refPrev) / refPrev) * 100 : 0;
-      yoyChange = refYear !== 0 ? ((currentVal - refYear) / refYear) * 100 : 0;
-    } else {
-      momChange = currentVal - refPrev;
-      yoyChange = currentVal - refYear;
+    const idx = latestIndex(series, def.id);
+    if (idx < 0) {
+      return {
+        id: def.id,
+        definition: def,
+        available: false,
+        currentValue: 0,
+        validDate: '',
+        periodLabel: 'bez ověřeného zdroje',
+        momChange: 0,
+        momChangeLabel: 'MoM',
+        yoyChange: 0,
+        sparkline: [],
+        min12m: 0,
+        max12m: 0
+      };
     }
 
-    const sparkValues = last12.map((pt) => pt[def.id]);
-    const min12m = Math.min(...sparkValues);
-    const max12m = Math.max(...sparkValues);
+    const point = series[idx];
+    const currentVal = point[def.id] as number;
+    const isQuarterly = def.frequency === 'Čtvrtletní';
+    const prevIdx = isQuarterly ? idx - 3 : idx - 1;
+    const refPrev = prevIdx >= 0 ? series[prevIdx][def.id] : null;
+    const refYear = idx - 12 >= 0 ? series[idx - 12][def.id] : null;
+
+    const delta = (ref: number | null): number => {
+      if (ref === null) return 0;
+      return def.changeUnit === 'pct' ? (ref !== 0 ? ((currentVal - ref) / ref) * 100 : 0) : currentVal - ref;
+    };
+
+    const window = series
+      .slice(Math.max(0, idx - 11), idx + 1)
+      .filter((pt) => pt[def.id] !== null);
+    const sparkValues = window.map((pt) => pt[def.id] as number);
 
     let secondaryMetric: KpiSummary['secondaryMetric'] = undefined;
-    if (def.id === 'gdp_yoy') {
-      secondaryMetric = {
-        label: 'Mezičtvrtletně (QoQ)',
-        value: latest.gdp_qoq,
-        unit: '%'
-      };
+    if (def.id === 'gdp_yoy' && point.gdp_qoq !== null) {
+      secondaryMetric = { label: 'Mezičtvrtletně (QoQ)', value: point.gdp_qoq, unit: '%' };
     } else if (def.id === 'cnb_repo_2w') {
-      secondaryMetric = {
-        label: 'Reálná sazba (vs CPI)',
-        value: Number((latest.cnb_repo_2w - latest.cpi_yoy).toFixed(2)),
-        unit: '%'
-      };
+      const cpi = latestValue(series, 'cpi_yoy');
+      if (cpi !== null) {
+        secondaryMetric = {
+          label: 'Reálná sazba (vs poslední CPI)',
+          value: Number((currentVal - cpi).toFixed(2)),
+          unit: '%'
+        };
+      }
     }
+
+    const meta = latestMeta?.[def.id];
+    const [yy, mm] = point.date.split('-').map(Number);
+    const fallbackDate = `${yy}-${String(mm).padStart(2, '0')}-${String(new Date(yy, mm, 0).getDate()).padStart(2, '0')}`;
 
     return {
       id: def.id,
       definition: def,
+      available: true,
       currentValue: currentVal,
-      validDate: latest.validDate,
-      periodLabel: isQuarterly ? latest.quarter : formatMonthYearCz(latest.date),
-      momChange: Number(momChange.toFixed(2)),
+      validDate: meta?.obsDate ?? fallbackDate,
+      periodLabel: isQuarterly ? point.quarter : formatMonthYearCz(point.date),
+      momChange: Number(delta(refPrev).toFixed(2)),
       momChangeLabel: isQuarterly ? 'QoQ' : 'MoM',
-      yoyChange: Number(yoyChange.toFixed(2)),
+      yoyChange: Number(delta(refYear).toFixed(2)),
       secondaryMetric,
-      sparkline: last12.map((pt) => ({
-        date: pt.date,
-        value: pt[def.id]
-      })),
-      min12m,
-      max12m
+      sparkline: window.map((pt) => ({ date: pt.date, value: pt[def.id] as number })),
+      min12m: Math.min(...sparkValues),
+      max12m: Math.max(...sparkValues)
     };
   });
 
@@ -417,7 +426,7 @@ export function exportSeriesToCsv(
     pt.date,
     pt.validDate,
     pt.quarter,
-    ...indicatorIds.map((id) => String(pt[id]).replace('.', ','))
+    ...indicatorIds.map((id) => (pt[id] === null ? '' : String(pt[id]).replace('.', ',')))
   ]);
 
   const csvContent =
@@ -434,3 +443,4 @@ export function exportSeriesToCsv(
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+

@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { INDICATORS, MACRO_INDICATOR_IDS } from '../config/indicators';
 import {
+  seriesStats,
   exportSeriesToCsv,
   filterSeriesByRange,
   formatMonthYearCz,
@@ -48,27 +49,18 @@ export const MacroTab: React.FC<MacroTabProps> = ({ series }) => {
   }, [filteredSeries]);
 
   const macroStats = useMemo(() => {
-    if (filteredSeries.length === 0) return [];
-    const first = filteredSeries[0];
-    const last = filteredSeries[filteredSeries.length - 1];
-
-    return MACRO_INDICATOR_IDS.map((id) => {
-      const def = INDICATORS[id];
-      const vals = filteredSeries.map((p) => p[id]);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const delta = last[id] - first[id];
-
-      return {
+    return MACRO_INDICATOR_IDS.flatMap((id) => {
+      const st = seriesStats(filteredSeries, id);
+      if (!st) return [];
+      return [{
         id,
-        def,
-        current: last[id],
-        min,
-        max,
-        avg: Number(avg.toFixed(1)),
-        delta: Number(delta.toFixed(1))
-      };
+        def: INDICATORS[id],
+        current: st.current,
+        min: st.min,
+        max: st.max,
+        avg: Number(st.avg.toFixed(1)),
+        delta: Number(st.delta.toFixed(1))
+      }];
     });
   }, [filteredSeries]);
 

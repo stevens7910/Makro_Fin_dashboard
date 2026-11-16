@@ -35,6 +35,28 @@ export const KpiCard: React.FC<KpiCardProps> = ({ summary, onInspect }) => {
     max12m
   } = summary;
 
+  if (!summary.available) {
+    return (
+      <article className="kpi-card kpi-card-unavailable" aria-label={`${definition.name}: bez ověřeného zdroje`}>
+        <div className="kpi-card-accent" style={{ backgroundColor: 'var(--text-muted)' }} />
+        <div className="kpi-card-top">
+          <div className="kpi-title-group">
+            <div className="kpi-meta-badges">
+              <span className="kpi-cat-badge cat-rates">Sazby &amp; Swapy</span>
+              <span className="kpi-source-badge">{definition.sourceName}</span>
+            </div>
+            <h3 className="kpi-title">{definition.name}</h3>
+          </div>
+        </div>
+        <div className="kpi-value-number">—</div>
+        <p className="panel-subtitle">
+          Pro CZK IRS neexistuje veřejný bezplatný datový zdroj, proto zde nezobrazujeme žádné odhady. Hodnoty lze doplnit
+          do souboru <code>data/irs_manual.csv</code> a spustit <code>npm run update-data</code>.
+        </p>
+      </article>
+    );
+  }
+
   const getChangeClass = (val: number) => {
     if (val > 0.001) return 'change-positive'; // Zelená pro kladnou změnu (+)
     if (val < -0.001) return 'change-negative'; // Červená pro zápornou změnu (-)

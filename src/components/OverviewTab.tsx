@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import {
   Activity,
   Compass,
@@ -21,6 +21,8 @@ import {
   YAxis
 } from 'recharts';
 import {
+  latestIndex,
+  latestValue,
   exportSeriesToCsv,
   filterSeriesByRange,
   formatMonthYearCz,
@@ -54,12 +56,33 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   // Výchozí zobrazení posledních 12 měsíců ('1Y' -> tlačítko 1R)
   const [quickRange, setQuickRange] = useState<TimeRangeKey>('1Y');
 
-  const latestPoint = series[series.length - 1];
-  const yearAgoPoint = series[Math.max(0, series.length - 13)];
+  // Poslední známá hodnota každého indikátoru (CPI/nezaměstnanost/HDP vycházejí se zpožděním)
+  const lv = (id: IndicatorId) => latestValue(series, id) ?? 0;
+  const lastRaw = series[series.length - 1];
+  const latestPoint = {
+    date: lastRaw.date,
+    cnb_repo_2w: lv('cnb_repo_2w'),
+    pribor_1m: lv('pribor_1m'),
+    pribor_3m: lv('pribor_3m'),
+    pribor_12m: lv('pribor_12m'),
+    cpi_yoy: lv('cpi_yoy'),
+    fx_eur: lv('fx_eur'),
+    fx_usd: lv('fx_usd')
+  };
+  const cpiMeta = latestIndex(series, 'cpi_yoy');
+  const cpiPeriod = cpiMeta >= 0 ? formatMonthYearCz(series[cpiMeta].date) : '';
+  const yearAgoRaw = series[Math.max(0, series.length - 13)];
+  const yearAgoPoint = {
+    date: yearAgoRaw.date,
+    cnb_repo_2w: yearAgoRaw.cnb_repo_2w ?? 0,
+    pribor_1m: yearAgoRaw.pribor_1m ?? 0,
+    pribor_3m: yearAgoRaw.pribor_3m ?? 0,
+    pribor_12m: yearAgoRaw.pribor_12m ?? 0
+  };
 
   // Odvozené makroekonomické metriky pro analytický kompas
   const realRepoRate = latestPoint ? Number((latestPoint.cnb_repo_2w - latestPoint.cpi_yoy).toFixed(2)) : 0;
-  const yieldCurveSlope = latestPoint ? Number((latestPoint.irs_5y - latestPoint.pribor_3m).toFixed(2)) : 0;
+  const yieldCurveSlope = Number((latestPoint.pribor_12m - latestPoint.pribor_3m).toFixed(2));
   const cpiTargetDiff = latestPoint ? Number((latestPoint.cpi_yoy - 2.0).toFixed(1)) : 0;
   const eurUsdImpl = latestPoint ? Number((latestPoint.fx_eur / latestPoint.fx_usd).toFixed(4)) : 0;
 
@@ -88,9 +111,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       { tenor: '2W Repo', current: latestPoint.cnb_repo_2w, yearAgo: yearAgoPoint.cnb_repo_2w },
       { tenor: 'PRIBOR 1M', current: latestPoint.pribor_1m, yearAgo: yearAgoPoint.pribor_1m },
       { tenor: 'PRIBOR 3M', current: latestPoint.pribor_3m, yearAgo: yearAgoPoint.pribor_3m },
-      { tenor: 'PRIBOR 12M', current: latestPoint.pribor_12m, yearAgo: yearAgoPoint.pribor_12m },
-      { tenor: 'IRS 3Y', current: latestPoint.irs_3y, yearAgo: yearAgoPoint.irs_3y },
-      { tenor: 'IRS 5Y', current: latestPoint.irs_5y, yearAgo: yearAgoPoint.irs_5y }
+      { tenor: 'PRIBOR 12M', current: latestPoint.pribor_12m, yearAgo: yearAgoPoint.pribor_12m }
     ];
   }, [latestPoint, yearAgoPoint]);
 
@@ -120,7 +141,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 {realRepoRate >= 0 ? 'Restriktivní / Kladné úročení' : 'Záporná reálná sazba'}
               </span>
             </div>
-            <p className="compass-note">Rozdíl 2W Repo ČNB ({formatNumberCz(latestPoint.cnb_repo_2w, 2)} %) a inflace CPI ({formatNumberCz(latestPoint.cpi_yoy, 1)} %)</p>
+            <p className="compass-note">Rozdíl 2W Repo ČNB ({formatNumberCz(latestPoint.cnb_repo_2w, 2)} %) a inflace CPI ({formatNumberCz(latestPoint.cpi_yoy, 1)} %, {cpiPeriod})</p>
           </div>
         </div>
 
@@ -129,7 +150,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <TrendingUp size={18} />
           </div>
           <div className="compass-content">
-            <span className="compass-label">Sklon křivky (IRS 5Y − PRIBOR 3M)</span>
+            <span className="compass-label">Sklon křivky (PRIBOR 12M − 3M)</span>
             <div className="compass-val-row">
               <strong className={yieldCurveSlope >= 0 ? 'text-positive' : 'text-negative'}>
                 {yieldCurveSlope > 0 ? '+' : ''}
@@ -139,7 +160,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 {yieldCurveSlope >= 0 ? 'Normální sklon' : 'Inverzní křivka'}
               </span>
             </div>
-            <p className="compass-note">Spread 5Y swapu ({formatNumberCz(latestPoint.irs_5y, 2)} %) vůči 3M PRIBORu ({formatNumberCz(latestPoint.pribor_3m, 2)} %)</p>
+            <p className="compass-note">Spread 12M PRIBORu ({formatNumberCz(latestPoint.pribor_12m, 2)} %) vůči 3M PRIBORu ({formatNumberCz(latestPoint.pribor_3m, 2)} %)</p>
           </div>
         </div>
 
@@ -158,7 +179,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 {Math.abs(cpiTargetDiff) <= 1.0 ? 'V tolerančním pásmu 1–3 %' : 'Mimo toleranční pásmo'}
               </span>
             </div>
-            <p className="compass-note">Aktuální CPI {formatNumberCz(latestPoint.cpi_yoy, 1)} % vs. inflační cíl ČNB 2,0 %</p>
+            <p className="compass-note">CPI {cpiPeriod}: {formatNumberCz(latestPoint.cpi_yoy, 1)} % vs. inflační cíl ČNB 2,0 %</p>
           </div>
         </div>
 
@@ -334,7 +355,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <span className="panel-eyebrow">Struktura úrokových sazeb</span>
               <h2>Tvar korunové výnosové křivky (Aktuální vs. před 1 rokem)</h2>
               <p className="panel-subtitle">
-                Porovnání krátkého konce (2W Repo, PRIBOR 1M–12M) a dlouhého konce (CZK IRS 3Y, 5Y)
+                Porovnání 2W repo sazby ČNB a PRIBOR 1M, 3M a 12M (CZK IRS nemá veřejný zdroj)
               </p>
             </div>
           </div>
@@ -383,3 +404,5 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     </div>
   );
 };
+
+

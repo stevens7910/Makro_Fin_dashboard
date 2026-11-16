@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { INDICATORS, RATE_INDICATOR_IDS } from '../config/indicators';
 import {
+  seriesStats,
   exportSeriesToCsv,
   filterSeriesByRange,
   formatMonthYearCz,
@@ -39,8 +40,8 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
     pribor_1m: true,
     pribor_3m: true,
     pribor_12m: true,
-    irs_3y: true,
-    irs_5y: true,
+    irs_3y: false,
+    irs_5y: false,
     cpi_yoy: false,
     unemployment: false,
     gdp_yoy: false,
@@ -64,38 +65,29 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
     [series, selectedRange]
   );
 
-  // Obohacená řada o spread IRS 5Y - PRIBOR 3M (v bazických bodech bps)
+  // Obohacená řada o spread PRIBOR 12M - PRIBOR 3M (bazické body)
   const spreadSeries = useMemo(() => {
     return filteredSeries.map((pt) => ({
       ...pt,
-      spread_irs5y_pribor3m: Number(((pt.irs_5y - pt.pribor_3m) * 100).toFixed(0)),
-      spread_pribor3m_repo: Number(((pt.pribor_3m - pt.cnb_repo_2w) * 100).toFixed(0))
+      spread_irs5y_pribor3m: Number((((pt.pribor_12m ?? 0) - (pt.pribor_3m ?? 0)) * 100).toFixed(0)),
+      spread_pribor3m_repo: Number((((pt.pribor_3m ?? 0) - (pt.cnb_repo_2w ?? 0)) * 100).toFixed(0))
     }));
   }, [filteredSeries]);
 
   // Výpočet statistik za zvolené období (Min, Max, Průměr, Změna za období)
   const periodStats = useMemo(() => {
-    if (filteredSeries.length === 0) return [];
-    const first = filteredSeries[0];
-    const last = filteredSeries[filteredSeries.length - 1];
-
-    return RATE_INDICATOR_IDS.map((id) => {
-      const def = INDICATORS[id];
-      const vals = filteredSeries.map((p) => p[id]);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const periodDelta = last[id] - first[id];
-
-      return {
+    return RATE_INDICATOR_IDS.flatMap((id) => {
+      const st = seriesStats(filteredSeries, id);
+      if (!st) return [];
+      return [{
         id,
-        def,
-        current: last[id],
-        min,
-        max,
-        avg: Number(avg.toFixed(2)),
-        periodDelta: Number(periodDelta.toFixed(2))
-      };
+        def: INDICATORS[id],
+        current: st.current,
+        min: st.min,
+        max: st.max,
+        avg: Number(st.avg.toFixed(2)),
+        periodDelta: Number(st.delta.toFixed(2))
+      }];
     });
   }, [filteredSeries]);
 
@@ -119,9 +111,9 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
         <div className="chart-panel-header">
           <div>
             <span className="panel-eyebrow">Peněžní trh a korunové deriváty</span>
-            <h2>Vývoj úrokových sazeb ČNB (2W Repo), PRIBOR (1M, 3M, 12M) a úrokových swapů (IRS 3Y, 5Y)</h2>
+            <h2>Vývoj úrokových sazeb ČNB (2W Repo) a PRIBOR (1M, 3M, 12M)</h2>
             <p className="panel-subtitle">
-              Porovnání měnověpolitické sazby ČNB s mezibankovními sazbami PRIBOR a střednědobými korunovými swapy IRS
+              Oficiální data ČNB. CZK IRS 3Y/5Y zde nezobrazujeme – pro swapy neexistuje veřejný bezplatný zdroj (lze doplnit do data/irs_manual.csv).
             </p>
           </div>
         </div>
@@ -190,9 +182,9 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
                   <CustomChartTooltip
                     extraNotes={(pt) => (
                       <div className="tooltip-spread-summary">
-                        <span>Spread IRS 5Y − PRIBOR 3M:</span>
+                        <span>Spread PRIBOR 12M − 3M:</span>
                         <strong>
-                          {formatNumberCz((pt.irs_5y - pt.pribor_3m) * 100, 0)} bps
+                          {formatNumberCz(((pt.pribor_12m ?? 0) - (pt.pribor_3m ?? 0)) * 100, 0)} bps
                         </strong>
                       </div>
                     )}
@@ -274,7 +266,7 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
           <div className="chart-panel-header">
             <div>
               <span className="panel-eyebrow">Tržní očekávání &amp; Prémie</span>
-              <h3>Spread výnosové křivky (IRS 5Y − PRIBOR 3M v bazických bodech)</h3>
+              <h3>Sklon peněžní křivky (PRIBOR 12M − 3M v bazických bodech)</h3>
               <p className="panel-subtitle">
                 Záporné hodnoty indikují inverzní výnosovou křivku (trh očekává budoucí pokles sazeb ČNB)
               </p>
@@ -317,7 +309,7 @@ export const RatesTab: React.FC<RatesTabProps> = ({ series, focusedIndicator }) 
                 <Area
                   type="monotone"
                   dataKey="spread_irs5y_pribor3m"
-                  name="Spread IRS 5Y − PRIBOR 3M"
+                  name="Spread PRIBOR 12M − 3M"
                   stroke="#ec4899"
                   fill="url(#spreadGrad)"
                   strokeWidth={2.2}

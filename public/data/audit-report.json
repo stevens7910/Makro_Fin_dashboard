@@ -1,0 +1,201 @@
+{
+  "generatedAt": "2026-11-16T12:55:55.146Z",
+  "dataLastUpdated": "2026-11-16T12:55:34.822Z",
+  "status": "OK",
+  "latest": {
+    "cnb_repo_2w": {
+      "period": "2026-11",
+      "obsDate": "2026-11-16",
+      "quarter": null
+    },
+    "pribor_1m": {
+      "period": "2026-11",
+      "obsDate": "2026-11-09",
+      "quarter": null
+    },
+    "pribor_3m": {
+      "period": "2026-11",
+      "obsDate": "2026-11-09",
+      "quarter": null
+    },
+    "pribor_12m": {
+      "period": "2026-11",
+      "obsDate": "2026-11-09",
+      "quarter": null
+    },
+    "irs_3y": null,
+    "irs_5y": null,
+    "cpi_yoy": {
+      "period": "2026-10",
+      "obsDate": null,
+      "quarter": null
+    },
+    "unemployment": {
+      "period": "2026-09",
+      "obsDate": null,
+      "quarter": null
+    },
+    "gdp_yoy": {
+      "period": "2026-09",
+      "obsDate": null,
+      "quarter": "3Q 2026"
+    },
+    "gdp_qoq": {
+      "period": "2026-09",
+      "obsDate": null,
+      "quarter": "3Q 2026"
+    },
+    "fx_eur": {
+      "period": "2026-11",
+      "obsDate": "2026-11-13",
+      "quarter": null
+    },
+    "fx_usd": {
+      "period": "2026-11",
+      "obsDate": "2026-11-13",
+      "quarter": null
+    }
+  },
+  "unverified": [
+    {
+      "id": "irs_3y",
+      "reason": "Žádný veřejný bezplatný zdroj CZK IRS – hodnoty nejsou zobrazeny"
+    },
+    {
+      "id": "irs_5y",
+      "reason": "Žádný veřejný bezplatný zdroj CZK IRS – hodnoty nejsou zobrazeny"
+    }
+  ],
+  "checks": [
+    {
+      "id": "cnb_repo_2w",
+      "name": "2W repo sazba ČNB – všechny měsíce od 2015",
+      "source": "ČNB – historie repo sazby",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "pribor_1m",
+      "name": "PRIBOR 1M – všechny měsíce od 2015",
+      "source": "ČNB – fixing PRIBOR",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "pribor_3m",
+      "name": "PRIBOR 3M – všechny měsíce od 2015",
+      "source": "ČNB – fixing PRIBOR",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "pribor_12m",
+      "name": "PRIBOR 12M – všechny měsíce od 2015",
+      "source": "ČNB – fixing PRIBOR",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "cpi_yoy",
+      "name": "Inflace CPI y/y – všechny měsíce od 2015",
+      "source": "ČSÚ DataStat WCEN01",
+      "compared": 142,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "unemployment",
+      "name": "Nezaměstnanost – všechny měsíce od 2015",
+      "source": "Eurostat une_rt_m",
+      "compared": 141,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "gdp_yoy",
+      "name": "HDP y/y – všechny měsíce od 2015",
+      "source": "Eurostat namq_10_gdp",
+      "compared": 141,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "gdp_qoq",
+      "name": "HDP q/q – všechny měsíce od 2015",
+      "source": "Eurostat namq_10_gdp",
+      "compared": 141,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "fx_eur",
+      "name": "CZK/EUR – všechny měsíce od 2015",
+      "source": "ČNB kurzovní lístek",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "fx_usd",
+      "name": "CZK/USD – všechny měsíce od 2015",
+      "source": "ČNB kurzovní lístek",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "xcheck_fx",
+      "name": "Křížová kontrola kurzů přes api.cnb.cz (všech 143 měsíců)",
+      "source": "api.cnb.cz/cnbapi/exrates",
+      "compared": 286,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "xcheck_pribor",
+      "name": "Křížová kontrola PRIBOR přes api.cnb.cz (všech 143 měsíců)",
+      "source": "api.cnb.cz/cnbapi/pribor",
+      "compared": 429,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    },
+    {
+      "id": "sanity",
+      "name": "Úplnost měsíců, rozumné meze, repo vs. PRIBOR O/N (dnešní)",
+      "source": "interní",
+      "compared": 143,
+      "mismatches": 0,
+      "maxAbsDiff": 0,
+      "details": [],
+      "status": "OK"
+    }
+  ]
+}

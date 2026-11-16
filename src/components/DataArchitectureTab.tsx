@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { INDICATOR_LIST } from '../config/indicators';
 import { CacheDiagnostics, MacroDatasetPayload } from '../types/macro';
+import { AuditPanel } from './AuditPanel';
 
 interface DataArchitectureTabProps {
   dataset: MacroDatasetPayload;
@@ -52,7 +53,7 @@ export const DataArchitectureTab: React.FC<DataArchitectureTabProps> = ({
               disabled={isSyncing}
             >
               <RefreshCw size={15} className={isSyncing ? 'spin-anim' : ''} />
-              <span>{isSyncing ? 'Dotazuji ČNB API...' : 'Otestovat živý dotaz ČNB API'}</span>
+              <span>{isSyncing ? 'Načítám...' : 'Aktualizovat data'}</span>
             </button>
             <button
               type="button"
@@ -121,6 +122,8 @@ export const DataArchitectureTab: React.FC<DataArchitectureTabProps> = ({
         </div>
       </div>
 
+      <AuditPanel />
+
       {/* Dvousloupcový přehled: JSON kontrakt pro Python scraper & Veřejné API endpointy */}
       <div className="two-col-detail-grid">
         <div className="chart-panel">
@@ -129,7 +132,7 @@ export const DataArchitectureTab: React.FC<DataArchitectureTabProps> = ({
               <span className="panel-eyebrow">Integrace na vlastní Python Scraper</span>
               <h3>Struktura souboru <code>/public/data/macro-data.json</code></h3>
               <p className="panel-subtitle">
-                Součástí projektu je připravený skript <code>scripts/scraper_cz_macro.py</code>, který stahuje kurzy a sazby a zapisuje je v tomto schématu:
+                Soubor generuje skript <code>scripts/update-data.mjs</code> (Node.js) z oficiálních zdrojů; chybějící údaje jsou <code>null</code>:
               </p>
             </div>
           </div>
@@ -147,11 +150,11 @@ export const DataArchitectureTab: React.FC<DataArchitectureTabProps> = ({
           <div className="code-block-wrapper" style={{ marginTop: '14px' }}>
             <div className="code-block-header">
               <Terminal size={14} />
-              <span>Spuštění přiloženého Python scraperu (cron / GitHub Actions / Task Scheduler)</span>
+              <span>Aktualizace a audit dat (GitHub Actions je spouští denně)</span>
             </div>
             <pre className="code-pre">
-{`# Aktualizace dat z ČNB / ČSÚ do public/data/macro-data.json
-python scripts/scraper_cz_macro.py --output public/data/macro-data.json`}
+{`npm run update-data   # stáhne ČNB / ČSÚ / Eurostat -> public/data/macro-data.json
+npm run audit-data    # nezávislá kontrola proti zdrojům -> public/data/audit-report.json`}
             </pre>
           </div>
         </div>

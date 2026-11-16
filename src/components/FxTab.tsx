@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { FX_INDICATOR_IDS, INDICATORS } from '../config/indicators';
 import {
+  seriesStats,
   exportSeriesToCsv,
   filterSeriesByRange,
   formatMonthYearCz,
@@ -41,32 +42,23 @@ export const FxTab: React.FC<FxTabProps> = ({ series }) => {
   const enrichedFxSeries = useMemo(() => {
     return filteredSeries.map((pt) => ({
       ...pt,
-      eur_usd_cross: Number((pt.fx_eur / pt.fx_usd).toFixed(4))
+      eur_usd_cross: pt.fx_eur !== null && pt.fx_usd !== null ? Number((pt.fx_eur / pt.fx_usd).toFixed(4)) : null
     }));
   }, [filteredSeries]);
 
   const fxStats = useMemo(() => {
-    if (filteredSeries.length === 0) return [];
-    const first = filteredSeries[0];
-    const last = filteredSeries[filteredSeries.length - 1];
-
-    return FX_INDICATOR_IDS.map((id) => {
-      const def = INDICATORS[id];
-      const vals = filteredSeries.map((p) => p[id]);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const pctChange = first[id] !== 0 ? ((last[id] - first[id]) / first[id]) * 100 : 0;
-
-      return {
+    return FX_INDICATOR_IDS.flatMap((id) => {
+      const st = seriesStats(filteredSeries, id);
+      if (!st) return [];
+      return [{
         id,
-        def,
-        current: last[id],
-        min,
-        max,
-        avg: Number(avg.toFixed(2)),
-        pctChange: Number(pctChange.toFixed(2))
-      };
+        def: INDICATORS[id],
+        current: st.current,
+        min: st.min,
+        max: st.max,
+        avg: Number(st.avg.toFixed(2)),
+        pctChange: Number(st.pctDelta.toFixed(2))
+      }];
     });
   }, [filteredSeries]);
 
@@ -130,7 +122,7 @@ export const FxTab: React.FC<FxTabProps> = ({ series }) => {
                     extraNotes={(pt) => (
                       <div className="tooltip-spread-summary">
                         <span>Implikovaný kurz EUR/USD:</span>
-                        <strong>{formatNumberCz(pt.fx_eur / pt.fx_usd, 4)} USD</strong>
+                        <strong>{formatNumberCz((pt.fx_eur ?? 0) / (pt.fx_usd ?? 1), 4)} USD</strong>
                       </div>
                     )}
                   />

@@ -1,4 +1,4 @@
-export type IndicatorId =
+﻿export type IndicatorId =
   | 'cnb_repo_2w'
   | 'pribor_1m'
   | 'pribor_3m'
@@ -22,18 +22,18 @@ export interface MacroDataPoint {
   date: string;         // YYYY-MM (např. "2026-11")
   validDate: string;    // YYYY-MM-DD (např. "2026-11-30")
   quarter: string;      // např. "4Q 2026"
-  cnb_repo_2w: number;
-  pribor_1m: number;
-  pribor_3m: number;
-  pribor_12m: number;
-  irs_3y: number;
-  irs_5y: number;
-  cpi_yoy: number;
-  unemployment: number;
-  gdp_yoy: number;
-  gdp_qoq: number;
-  fx_eur: number;
-  fx_usd: number;
+  cnb_repo_2w: number | null;
+  pribor_1m: number | null;
+  pribor_3m: number | null;
+  pribor_12m: number | null;
+  irs_3y: number | null;
+  irs_5y: number | null;
+  cpi_yoy: number | null;
+  unemployment: number | null;
+  gdp_yoy: number | null;
+  gdp_qoq: number | null;
+  fx_eur: number | null;
+  fx_usd: number | null;
 }
 
 export interface IndicatorDefinition {
@@ -55,6 +55,7 @@ export interface IndicatorDefinition {
 export interface KpiSummary {
   id: IndicatorId;
   definition: IndicatorDefinition;
+  available: boolean;
   currentValue: number;
   validDate: string;
   periodLabel: string;
@@ -75,9 +76,10 @@ export interface MacroDatasetPayload {
   schemaVersion: string;
   lastUpdated: string;
   generator: string;
+  latest?: Record<string, { period: string; obsDate: string | null; quarter: string | null } | null>;
   sources: Record<string, {
     name: string;
-    [key: string]: string;
+    [key: string]: string | null;
   }>;
   series: MacroDataPoint[];
 }
@@ -93,3 +95,4 @@ export interface CacheDiagnostics {
   payloadSizeKb: number;
   liveCnbStatus: 'idle' | 'ok' | 'fallback';
 }
+

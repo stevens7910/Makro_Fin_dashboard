@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Service Worker pro CZ MakroFin PWA Dashboard
  * Podporuje jak nasazení na kořenové doméně, tak na GitHub Pages (/Makro_Fin_dashboard/).
  */
 
-const CACHE_VERSION = 'cz-makrofin-v1.3.0';
+const CACHE_VERSION = 'cz-makrofin-v2.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DATA_CACHE = `${CACHE_VERSION}-data`;
 
@@ -123,3 +123,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
