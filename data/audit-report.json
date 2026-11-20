@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-11-19T15:56:57.242Z",
-  "dataLastUpdated": "2026-11-19T15:56:03.477Z",
+  "generatedAt": "2026-11-20T15:39:51.976Z",
+  "dataLastUpdated": "2026-11-20T15:38:59.589Z",
   "status": "OK",
   "latest": {
     "cnb_repo_2w": {
       "period": "2026-11",
-      "obsDate": "2026-11-19",
+      "obsDate": "2026-11-20",
       "quarter": null
     },
     "pribor_1m": {
       "period": "2026-11",
-      "obsDate": "2026-11-11",
+      "obsDate": "2026-11-12",
       "quarter": null
     },
     "pribor_3m": {
       "period": "2026-11",
-      "obsDate": "2026-11-11",
+      "obsDate": "2026-11-12",
       "quarter": null
     },
     "pribor_12m": {
       "period": "2026-11",
-      "obsDate": "2026-11-11",
+      "obsDate": "2026-11-12",
       "quarter": null
     },
     "irs_3y": null,
@@ -47,12 +47,12 @@
     },
     "fx_eur": {
       "period": "2026-11",
-      "obsDate": "2026-11-19",
+      "obsDate": "2026-11-20",
       "quarter": null
     },
     "fx_usd": {
       "period": "2026-11",
-      "obsDate": "2026-11-19",
+      "obsDate": "2026-11-20",
       "quarter": null
     }
   },
