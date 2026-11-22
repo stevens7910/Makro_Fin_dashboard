@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-21T14:51:06.852Z",
-  "dataLastUpdated": "2026-11-21T14:49:35.857Z",
+  "generatedAt": "2026-11-22T14:46:38.284Z",
+  "dataLastUpdated": "2026-11-22T14:45:42.464Z",
   "status": "OK",
   "latest": {
     "cnb_repo_2w": {
       "period": "2026-11",
-      "obsDate": "2026-11-21",
+      "obsDate": "2026-11-22",
       "quarter": null
     },
     "pribor_1m": {
